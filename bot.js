@@ -41,10 +41,7 @@ const client = new Client({
 const anthropic = new Anthropic({ apiKey: config.anthropicApiKey });
 
 // ── History stores ─────────────────────────────────────────────────────────
-// Guild channels — may be referenced by dashboard for stats
 const conversationHistory = new Map();
-
-// DMs — NEVER exported, NEVER visible to dashboard
 const dmHistory = new Map();
 
 function getChannelSession(channelId) {
@@ -131,8 +128,8 @@ async function generateVBAScript(excelContent, userPrompt, maxTokens) {
 // ── Core message handler ───────────────────────────────────────────────────
 async function handleMessage(message, isDM) {
   const userId = message.author.id;
+  console.log(`[msg] from=${userId} isDM=${isDM} content="${message.content.slice(0, 50)}"`);
 
-  // Gate: check daily token budget
   const limitCheck = checkLimit(userId);
   if (!limitCheck.allowed) {
     await message.reply(limitCheck.reason);
@@ -157,21 +154,17 @@ async function handleMessage(message, isDM) {
       const buffer       = await downloadAttachment(excelAttachment.url);
       const excelContent = parseExcelToText(buffer);
       const prompt       = userInput || 'Analyze this spreadsheet and suggest useful VBA automations.';
-
       await message.reply(`📊 Processing \`${excelAttachment.name}\`…`);
-
       const { result, tokensUsed } = await generateVBAScript(excelContent, prompt, limits.maxTokensPerRequest);
       recordUsage(userId, tokensUsed);
-
       for (const part of splitMessage(result)) await message.channel.send(part);
-
       if (!isAllowlisted(userId)) {
         const s = getUsageSummary(userId);
         await message.channel.send(`> 📊 Token budget: **${s.used}/${s.budget}** used today`);
       }
     } catch (err) {
       console.error('[VBA error]', err);
-      await message.reply('❌ Error processing the file. Make sure it\'s a valid .xlsx/.xls/.csv.');
+      await message.reply('❌ Error processing the file.');
     }
     return;
   }
@@ -180,8 +173,8 @@ async function handleMessage(message, isDM) {
   if (!userInput || ['usage', '!usage', 'help'].includes(userInput.toLowerCase())) {
     const s = getUsageSummary(userId);
     await message.reply(
-      `**${isDM ? '🤖 ClaudeBot DM' : '👋 Hi!'}**\n` +
-      `Ask me anything, or attach an Excel file for a VBA script.\n\n` +
+      `**${isDM ? '🤖 ClaudeBot' : '👋 Hi!'}**\n` +
+      `Ask me anything or attach an Excel file for a VBA script.\n\n` +
       `**Your token budget today:**\n` +
       `${s.tier} · ${s.used}/${s.budget} tokens (${s.pct}% used) · Resets midnight UTC`
     );
@@ -194,11 +187,9 @@ async function handleMessage(message, isDM) {
     const session = isDM ? getDMSession(userId) : getChannelSession(message.channelId);
     const { reply, tokensUsed } = await chatWithClaude(session, userInput, limits.maxTokensPerRequest);
     recordUsage(userId, tokensUsed);
-
     const parts = splitMessage(reply);
     await message.reply(parts[0]);
     for (let i = 1; i < parts.length; i++) await message.channel.send(parts[i]);
-
     if (!isAllowlisted(userId)) {
       const s = getUsageSummary(userId);
       if (s.pct >= 80) {
@@ -216,21 +207,31 @@ client.once(Events.ClientReady, () => {
   console.log(`✅ Bot online as ${client.user.tag}`);
   console.log(`📡 Prefix: ${config.prefix} | Channels: ${config.allowedChannels.length || 'ALL'}`);
   console.log(`🔑 Allowlisted users: ${ALLOWED_USER_IDS.size}`);
+  console.log(`[debug] Registered intents: Guilds, GuildMessages, MessageContent, DirectMessages`);
+  console.log(`[debug] Registered partials: Channel, Message, User`);
   startCleanupJob(conversationHistory, dmHistory);
 });
 
 client.on(Events.MessageCreate, async message => {
+  // Log every single message event to verify DMs are arriving
+  console.log(`[event] MessageCreate type=${message.channel.type} author=${message.author?.id} bot=${message.author?.bot}`);
+
   if (message.author.bot) return;
 
+  // Fetch partial messages so DM content is available
+  if (message.partial) {
+    try { await message.fetch(); }
+    catch (err) { console.error('[partial fetch error]', err); return; }
+  }
+
   const isDM = message.channel.type === ChannelType.DM;
+  console.log(`[route] isDM=${isDM} channelType=${message.channel.type}`);
 
   if (isDM) {
-    // DMs: no prefix needed — every message is addressed to the bot
     await handleMessage(message, true);
     return;
   }
 
-  // Guild: require prefix or mention
   const isMentioned = message.mentions.has(client.user);
   const hasPrefix   = message.content.startsWith(config.prefix);
   if (!isMentioned && !hasPrefix) return;
@@ -252,7 +253,6 @@ client.on(Events.InteractionCreate, async interaction => {
 
 module.exports = {
   client,
-  conversationHistory, // guild-only — dashboard may read for stats
-  // dmHistory intentionally NOT exported — private by design
+  conversationHistory,
   startBot: () => client.login(config.discordToken),
 };
