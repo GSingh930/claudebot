@@ -1,4 +1,4 @@
-const { Client, GatewayIntentBits, Events, ChannelType } = require('discord.js');
+const { Client, GatewayIntentBits, Events, ChannelType, Partials } = require('discord.js');
 const Anthropic = require('@anthropic-ai/sdk');
 const XLSX = require('xlsx');
 const https = require('https');
@@ -35,7 +35,7 @@ const client = new Client({
     GatewayIntentBits.DirectMessageReactions,
     GatewayIntentBits.DirectMessageTyping,
   ],
-  partials: ['CHANNEL', 'MESSAGE'],
+  partials: [Partials.Channel, Partials.Message, Partials.User],
 });
 
 const anthropic = new Anthropic({ apiKey: config.anthropicApiKey });
