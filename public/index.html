@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ClaudeBot Dashboard</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=Syne:wght@400;600;700;800&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #0d0f14;
+    --surface: #13161e;
+    --surface2: #1a1e29;
+    --border: #252a38;
+    --accent: #5865f2;
+    --accent2: #eb459e;
+    --green: #57f287;
+    --yellow: #fee75c;
+    --red: #ed4245;
+    --text: #e8eaf0;
+    --muted: #6b7280;
+    --code-bg: #0a0c10;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Syne', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: grid;
+    grid-template-columns: 240px 1fr;
+    grid-template-rows: auto 1fr;
+  }
+
+  /* Header */
+  header {
+    grid-column: 1 / -1;
+    background: var(--surface);
+    border-bottom: 1px solid var(--border);
+    padding: 0 32px;
+    height: 60px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-size: 18px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+
+  .logo-icon {
+    width: 34px; height: 34px;
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+    border-radius: 10px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 18px;
+  }
+
+  .bot-status {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--muted);
+    transition: background 0.3s;
+  }
+  .status-dot.online { background: var(--green); box-shadow: 0 0 8px var(--green); }
+  .status-dot.offline { background: var(--red); }
+
+  /* Sidebar */
+  nav {
+    background: var(--surface);
+    border-right: 1px solid var(--border);
+    padding: 24px 0;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+
+  .nav-section {
+    padding: 0 16px 8px;
+    font-size: 10px;
+    font-weight: 700;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-top: 16px;
+  }
+
+  .nav-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 9px 16px;
+    margin: 0 8px;
+    border-radius: 8px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--muted);
+    transition: all 0.15s;
+    border: none;
+    background: none;
+    width: calc(100% - 16px);
+    text-align: left;
+  }
+
+  .nav-item:hover { background: var(--surface2); color: var(--text); }
+  .nav-item.active { background: rgba(88,101,242,0.15); color: var(--accent); }
+  .nav-item .icon { font-size: 16px; width: 20px; text-align: center; }
+
+  /* Main content */
+  main {
+    overflow-y: auto;
+    padding: 32px;
+    display: flex;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .page { display: none; flex-direction: column; gap: 24px; }
+  .page.active { display: flex; }
+
+  .page-title {
+    font-size: 24px;
+    font-weight: 800;
+    letter-spacing: -0.5px;
+  }
+  .page-title span { color: var(--accent); }
+
+  /* Cards */
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 24px;
+  }
+
+  .card-title {
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 16px;
+  }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+
+  /* Form elements */
+  label {
+    display: block;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    color: var(--muted);
+    margin-bottom: 6px;
+    text-transform: uppercase;
+  }
+
+  input[type="text"], input[type="password"], textarea, select {
+    width: 100%;
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    color: var(--text);
+    padding: 10px 14px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 13px;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  input:focus, textarea:focus, select:focus {
+    border-color: var(--accent);
+  }
+
+  textarea { resize: vertical; min-height: 80px; }
+
+  .form-group { margin-bottom: 16px; }
+
+  /* Buttons */
+  .btn {
+    padding: 10px 20px;
+    border-radius: 8px;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.15s;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .btn-primary {
+    background: var(--accent);
+    color: white;
+  }
+  .btn-primary:hover { background: #4752c4; transform: translateY(-1px); }
+
+  .btn-success {
+    background: var(--green);
+    color: #000;
+  }
+  .btn-success:hover { opacity: 0.9; }
+
+  .btn-danger {
+    background: var(--red);
+    color: white;
+  }
+  .btn-danger:hover { opacity: 0.9; }
+
+  .btn-ghost {
+    background: var(--surface2);
+    color: var(--text);
+    border: 1px solid var(--border);
+  }
+  .btn-ghost:hover { background: var(--border); }
+
+  .btn-sm { padding: 6px 14px; font-size: 12px; }
+
+  /* Chat test */
+  .chat-window {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    height: 360px;
+    overflow-y: auto;
+    padding: 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    margin-bottom: 12px;
+  }
+
+  .chat-msg {
+    display: flex;
+    gap: 10px;
+    align-items: flex-start;
+  }
+
+  .chat-avatar {
+    width: 28px; height: 28px;
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    flex-shrink: 0;
+    margin-top: 2px;
+  }
+
+  .chat-msg.user .chat-avatar { background: var(--accent); }
+  .chat-msg.bot .chat-avatar {
+    background: linear-gradient(135deg, var(--accent), var(--accent2));
+  }
+
+  .chat-bubble {
+    background: var(--surface2);
+    border-radius: 12px;
+    padding: 10px 14px;
+    font-size: 13px;
+    line-height: 1.6;
+    max-width: calc(100% - 50px);
+    white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .chat-msg.user .chat-bubble {
+    background: rgba(88,101,242,0.2);
+    border: 1px solid rgba(88,101,242,0.3);
+  }
+
+  .chat-input-row {
+    display: flex;
+    gap: 10px;
+  }
+
+  .chat-input-row input {
+    flex: 1;
+  }
+
+  /* VBA section */
+  .vba-result {
+    background: var(--code-bg);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 16px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    line-height: 1.7;
+    white-space: pre-wrap;
+    max-height: 400px;
+    overflow-y: auto;
+    color: #a8c5da;
+    display: none;
+  }
+
+  .vba-result.visible { display: block; }
+
+  code { 
+    background: var(--code-bg);
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: #eb459e;
+  }
+
+  /* File upload */
+  .file-drop {
+    border: 2px dashed var(--border);
+    border-radius: 10px;
+    padding: 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    position: relative;
+  }
+  .file-drop:hover, .file-drop.dragover {
+    border-color: var(--accent);
+    background: rgba(88,101,242,0.05);
+  }
+  .file-drop input[type="file"] {
+    position: absolute; inset: 0;
+    opacity: 0;
+    cursor: pointer;
+    width: 100%; height: 100%;
+    padding: 0;
+  }
+  .file-drop-label {
+    font-size: 13px;
+    color: var(--muted);
+  }
+  .file-drop-label strong { color: var(--accent); }
+  .file-name {
+    margin-top: 8px;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--green);
+  }
+
+  /* Stats */
+  .stat-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; }
+
+  .stat-card {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    padding: 20px;
+  }
+
+  .stat-label {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .stat-value {
+    font-size: 28px;
+    font-weight: 800;
+    letter-spacing: -1px;
+  }
+
+  .stat-value.accent { color: var(--accent); }
+  .stat-value.green { color: var(--green); }
+  .stat-value.pink { color: var(--accent2); }
+
+  /* Alerts */
+  .alert {
+    padding: 12px 16px;
+    border-radius: 8px;
+    font-size: 13px;
+    display: none;
+    align-items: center;
+    gap: 8px;
+  }
+  .alert.show { display: flex; }
+  .alert-success { background: rgba(87,242,135,0.1); border: 1px solid rgba(87,242,135,0.3); color: var(--green); }
+  .alert-error { background: rgba(237,66,69,0.1); border: 1px solid rgba(237,66,69,0.3); color: var(--red); }
+
+  /* Loading */
+  .loading { opacity: 0.6; pointer-events: none; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .spinner {
+    display: inline-block;
+    width: 14px; height: 14px;
+    border: 2px solid transparent;
+    border-top-color: currentColor;
+    border-radius: 50%;
+    animation: spin 0.6s linear infinite;
+  }
+
+  /* Channel tags */
+  .tag-list { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+  .tag {
+    background: var(--surface2);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 4px 10px;
+    font-size: 12px;
+    font-family: 'IBM Plex Mono', monospace;
+    display: flex; align-items: center; gap: 6px;
+  }
+  .tag-remove {
+    cursor: pointer;
+    color: var(--muted);
+    font-size: 14px;
+    line-height: 1;
+  }
+  .tag-remove:hover { color: var(--red); }
+
+  /* Setup guide */
+  .steps { display: flex; flex-direction: column; gap: 12px; }
+  .step {
+    display: flex;
+    gap: 14px;
+    align-items: flex-start;
+  }
+  .step-num {
+    width: 28px; height: 28px;
+    background: var(--accent);
+    border-radius: 50%;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 12px;
+    font-weight: 800;
+    flex-shrink: 0;
+  }
+  .step-body { flex: 1; }
+  .step-title { font-weight: 700; font-size: 14px; margin-bottom: 4px; }
+  .step-desc { font-size: 13px; color: var(--muted); line-height: 1.5; }
+  .step-desc a { color: var(--accent); text-decoration: none; }
+  .step-desc a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">
+    <div class="logo-icon">🤖</div>
+    ClaudeBot Dashboard
+  </div>
+  <div class="bot-status">
+    <div class="status-dot" id="statusDot"></div>
+    <span id="statusText">Checking...</span>
+    <button class="btn btn-sm btn-success" id="startBtn" onclick="toggleBot(true)" style="display:none">▶ Start Bot</button>
+    <button class="btn btn-sm btn-danger" id="stopBtn" onclick="toggleBot(false)" style="display:none">■ Stop Bot</button>
+  </div>
+</header>
+
+<nav>
+  <div class="nav-section">General</div>
+  <button class="nav-item active" onclick="showPage('overview')">
+    <span class="icon">📊</span> Overview
+  </button>
+  <button class="nav-item" onclick="showPage('config')">
+    <span class="icon">⚙️</span> Configuration
+  </button>
+  <button class="nav-item" onclick="showPage('users')">
+    <span class="icon">👥</span> Users & Limits
+  </button>
+
+  <div class="nav-section">Testing</div>
+  <button class="nav-item" onclick="showPage('chat')">
+    <span class="icon">💬</span> Test Chat
+  </button>
+  <button class="nav-item" onclick="showPage('vba')">
+    <span class="icon">📊</span> Test VBA
+  </button>
+
+  <div class="nav-section">Help</div>
+  <button class="nav-item" onclick="showPage('setup')">
+    <span class="icon">📖</span> Setup Guide
+  </button>
+</nav>
+
+<main>
+
+  <!-- OVERVIEW -->
+  <div class="page active" id="page-overview">
+    <div class="page-title">Bot <span>Overview</span></div>
+
+    <div class="stat-grid">
+      <div class="stat-card">
+        <div class="stat-label">Bot Status</div>
+        <div class="stat-value green" id="overviewStatus">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Prefix</div>
+        <div class="stat-value accent" id="overviewPrefix">—</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Allowed Channels</div>
+        <div class="stat-value pink" id="overviewChannels">—</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Capabilities</div>
+      <div style="display:grid; grid-template-columns: 1fr 1fr; gap: 12px;">
+        <div style="background:var(--surface2); border-radius:10px; padding:16px; border:1px solid var(--border)">
+          <div style="font-size:22px; margin-bottom:8px">💬</div>
+          <div style="font-weight:700; margin-bottom:4px">Chat</div>
+          <div style="font-size:13px; color:var(--muted)">Conversational AI powered by Claude. Mention the bot or use the prefix to chat. History is maintained per channel.</div>
+        </div>
+        <div style="background:var(--surface2); border-radius:10px; padding:16px; border:1px solid var(--border)">
+          <div style="font-size:22px; margin-bottom:8px">📊</div>
+          <div style="font-weight:700; margin-bottom:4px">VBA Script Generator</div>
+          <div style="font-size:13px; color:var(--muted)">Attach an Excel file (.xlsx/.xls/.csv) with a prompt describing what you want the VBA macro to do — the bot returns working code.</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Discord Usage</div>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:13px;">
+        <div style="background:var(--code-bg); border-radius:8px; padding:12px; font-family:'IBM Plex Mono',monospace; border:1px solid var(--border)">
+          <span style="color:var(--accent)">!claude</span> What is photosynthesis?
+          <div style="color:var(--muted); margin-top:4px; font-size:11px">→ Regular chat message</div>
+        </div>
+        <div style="background:var(--code-bg); border-radius:8px; padding:12px; font-family:'IBM Plex Mono',monospace; border:1px solid var(--border)">
+          <span style="color:var(--accent)">@ClaudeBot</span> Summarize this for me
+          <div style="color:var(--muted); margin-top:4px; font-size:11px">→ Mention to chat</div>
+        </div>
+        <div style="background:var(--code-bg); border-radius:8px; padding:12px; font-family:'IBM Plex Mono',monospace; border:1px solid var(--border)">
+          <span style="color:var(--accent)">@ClaudeBot</span> [attach sales.xlsx] Add a macro to sum column B by month
+          <div style="color:var(--muted); margin-top:4px; font-size:11px">→ VBA script generation from Excel file</div>
+        </div>
+        <div style="background:var(--code-bg); border-radius:8px; padding:12px; font-family:'IBM Plex Mono',monospace; border:1px solid var(--border)">
+          <span style="color:var(--green)">/clear</span>
+          <div style="color:var(--muted); margin-top:4px; font-size:11px">→ Clear conversation history in current channel</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CONFIG -->
+  <div class="page" id="page-config">
+    <div class="page-title">Bot <span>Configuration</span></div>
+
+    <div class="card" style="border-color: rgba(88,101,242,0.4); background: rgba(88,101,242,0.05)">
+      <div style="display:flex; gap:12px; align-items:flex-start">
+        <div style="font-size:24px">🚂</div>
+        <div>
+          <div style="font-weight:700; margin-bottom:4px">Railway Deployment</div>
+          <div style="font-size:13px; color:var(--muted); line-height:1.6">
+            Config is managed via <strong style="color:var(--text)">Railway Environment Variables</strong> — no config file needed.
+            Go to your Railway project → <strong style="color:var(--text)">Variables</strong> tab and add the keys below.
+            The bot auto-starts when both required vars are present.
+          </div>
+          <a href="https://railway.app" target="_blank" style="display:inline-flex; align-items:center; gap:6px; margin-top:10px; color:var(--accent); font-size:13px; text-decoration:none; font-weight:600">
+            Open Railway Dashboard ↗
+          </a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Environment Variables</div>
+      <p style="font-size:13px; color:var(--muted); margin-bottom:16px">Current status of your Railway variables (read-only — edit them in Railway):</p>
+      <div id="envStatus" style="display:flex; flex-direction:column; gap:8px;">
+        <div style="text-align:center; color:var(--muted); font-size:13px; padding:16px">Loading...</div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Required Variables</div>
+      <div style="display:flex; flex-direction:column; gap:10px;">
+        <div style="background:var(--code-bg); border-radius:8px; padding:14px; border:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:2;">
+          <span style="color:var(--accent2)">DISCORD_TOKEN</span>=your_discord_bot_token<br>
+          <span style="color:var(--accent2)">ANTHROPIC_API_KEY</span>=sk-ant-your_key_here
+        </div>
+        <div class="card-title" style="margin-top:8px">Optional Variables</div>
+        <div style="background:var(--code-bg); border-radius:8px; padding:14px; border:1px solid var(--border); font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:2;">
+          <span style="color:var(--green)">PREFIX</span>=!claude<br>
+          <span style="color:var(--green)">BOT_NAME</span>=ClaudeBot<br>
+          <span style="color:var(--green)">SYSTEM_PROMPT</span>=You are a helpful assistant...<br>
+          <span style="color:var(--green)">ALLOWED_CHANNELS</span>=123456,789012 <span style="color:var(--muted)">(comma-separated IDs, or leave blank for all)</span><br>
+          <span style="color:var(--green)">PORT</span>=3000 <span style="color:var(--muted)">(Railway sets this automatically)</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- USERS & LIMITS -->
+  <div class="page" id="page-users">
+    <div class="page-title">Users <span>&amp; Limits</span></div>
+
+    <div class="card" style="border-color:rgba(235,69,158,0.3); background:rgba(235,69,158,0.04)">
+      <div style="display:flex; gap:12px; align-items:flex-start">
+        <div style="font-size:22px">🔒</div>
+        <div style="font-size:13px; color:var(--muted); line-height:1.6">
+          <strong style="color:var(--text)">DM Privacy:</strong> Direct messages to the bot are completely private.
+          The dashboard has <strong style="color:var(--accent2)">no access</strong> to DM content — conversation history is stored
+          in a separate isolated map that is never exported or logged. Only the bot process can see DMs.
+        </div>
+      </div>
+    </div>
+
+    <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px">
+      <div class="card">
+        <div class="card-title">✅ Full Access (Allowlisted)</div>
+        <div style="font-size:13px; color:var(--muted); margin-bottom:16px">Set via <code>ALLOWED_USERS</code> Railway variable (comma-separated Discord user IDs).</div>
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+          <div style="display:flex; justify-content:space-between; background:var(--surface2); border-radius:8px; padding:10px 14px; border:1px solid var(--border)">
+            <span style="color:var(--muted)">Max tokens / request</span>
+            <span id="limFull1" style="font-family:'IBM Plex Mono',monospace; color:var(--green)">4000</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; background:var(--surface2); border-radius:8px; padding:10px 14px; border:1px solid var(--border)">
+            <span style="color:var(--muted)">Daily token budget</span>
+            <span id="limFull2" style="font-family:'IBM Plex Mono',monospace; color:var(--green)">100,000</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔒 Restricted (Everyone else)</div>
+        <div style="font-size:13px; color:var(--muted); margin-bottom:16px">Users not on the allowlist. Set limits via Railway variables below.</div>
+        <div style="display:flex; flex-direction:column; gap:8px; font-size:13px;">
+          <div style="display:flex; justify-content:space-between; background:var(--surface2); border-radius:8px; padding:10px 14px; border:1px solid var(--border)">
+            <span style="color:var(--muted)">Max tokens / request</span>
+            <span id="limRestr1" style="font-family:'IBM Plex Mono',monospace; color:var(--yellow)">200</span>
+          </div>
+          <div style="display:flex; justify-content:space-between; background:var(--surface2); border-radius:8px; padding:10px 14px; border:1px solid var(--border)">
+            <span style="color:var(--muted)">Daily token budget</span>
+            <span id="limRestr2" style="font-family:'IBM Plex Mono',monospace; color:var(--yellow)">500</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Railway Variables to Set</div>
+      <div style="background:var(--code-bg); border-radius:8px; padding:14px; font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:2.2; border:1px solid var(--border)">
+        <span style="color:var(--muted)"># Comma-separated Discord user IDs for full access</span><br>
+        <span style="color:var(--accent2)">ALLOWED_USERS</span>=123456789012345678,987654321098765432<br><br>
+        <span style="color:var(--muted)"># Full access limits</span><br>
+        <span style="color:var(--green)">MAX_TOKENS_FULL</span>=4000<br>
+        <span style="color:var(--green)">DAILY_TOKENS_FULL</span>=100000<br><br>
+        <span style="color:var(--muted)"># Restricted user limits (everyone else)</span><br>
+        <span style="color:var(--yellow)">MAX_TOKENS_RESTRICTED</span>=200<br>
+        <span style="color:var(--yellow)">DAILY_TOKENS_RESTRICTED</span>=500
+      </div>
+      <div style="margin-top:12px; font-size:12px; color:var(--muted)">
+        💡 To find a Discord user ID: enable Developer Mode in Discord Settings → right-click any user → Copy User ID
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">🕛 Scheduled Cleanup Jobs</div>
+      <div style="display:flex; flex-direction:column; gap:10px; font-size:13px;">
+        <div style="background:var(--surface2); border-radius:8px; padding:12px 16px; border:1px solid var(--border); display:flex; gap:12px; align-items:center">
+          <span style="font-size:18px">🌙</span>
+          <div>
+            <div style="font-weight:700; margin-bottom:2px">Midnight Reset (daily · UTC)</div>
+            <div style="color:var(--muted)">Wipes all daily token counters. Clears ALL in-memory conversation histories — both guild channels and DMs. No message content survives past midnight.</div>
+          </div>
+        </div>
+        <div style="background:var(--surface2); border-radius:8px; padding:12px 16px; border:1px solid var(--border); display:flex; gap:12px; align-items:center">
+          <span style="font-size:18px">♻️</span>
+          <div>
+            <div style="font-weight:700; margin-bottom:2px">Stale Session Eviction (every hour)</div>
+            <div style="color:var(--muted)">Any conversation session (guild or DM) that has been inactive for more than 2 hours is evicted from memory immediately — no need to wait for midnight.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- CHAT TEST -->
+  <div class="page" id="page-chat">
+    <div class="page-title">Test <span>Chat</span></div>
+
+    <div class="card">
+      <div class="card-title">Conversation Tester</div>
+      <div class="chat-window" id="chatWindow">
+        <div style="text-align:center; color:var(--muted); font-size:13px; margin: auto 0">
+          Start a conversation to test your bot's responses
+        </div>
+      </div>
+      <div class="chat-input-row">
+        <input type="text" id="chatInput" placeholder="Type a message..." onkeydown="if(event.key==='Enter') sendChat()">
+        <button class="btn btn-primary" onclick="sendChat()" id="chatSendBtn">Send</button>
+        <button class="btn btn-ghost" onclick="clearChat()">Clear</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- VBA TEST -->
+  <div class="page" id="page-vba">
+    <div class="page-title">Test <span>VBA Generator</span></div>
+
+    <div class="card">
+      <div class="card-title">Upload Excel File</div>
+      <div class="file-drop" id="fileDrop">
+        <input type="file" id="excelFile" accept=".xlsx,.xls,.csv" onchange="handleFileChange(this)">
+        <div class="file-drop-label">
+          <div style="font-size:28px; margin-bottom:8px">📁</div>
+          <strong>Click to upload</strong> or drag & drop<br>
+          <span style="font-size:12px">.xlsx, .xls, .csv supported</span>
+        </div>
+        <div class="file-name" id="fileName"></div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Describe the VBA Script</div>
+      <textarea id="vbaPrompt" rows="3" placeholder="e.g. Create a macro that loops through column A, finds cells with 'PENDING', and highlights them yellow. Also add a button to run it."></textarea>
+      <div style="margin-top:12px">
+        <button class="btn btn-primary" onclick="generateVBA()" id="vbaBtn">
+          <span>⚡</span> Generate VBA Script
+        </button>
+      </div>
+    </div>
+
+    <div class="card" id="vbaResultCard" style="display:none">
+      <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:12px">
+        <div class="card-title" style="margin:0">Generated VBA Script</div>
+        <button class="btn btn-sm btn-ghost" onclick="copyVBA()">📋 Copy</button>
+      </div>
+      <div class="vba-result visible" id="vbaResult"></div>
+    </div>
+  </div>
+
+  <!-- SETUP GUIDE -->
+  <div class="page" id="page-setup">
+    <div class="page-title">Setup <span>Guide</span></div>
+
+    <div class="card">
+      <div class="card-title">Getting Started</div>
+      <div class="steps">
+        <div class="step">
+          <div class="step-num">1</div>
+          <div class="step-body">
+            <div class="step-title">Create a Discord Bot</div>
+            <div class="step-desc">
+              Go to <a href="https://discord.com/developers/applications" target="_blank">discord.com/developers/applications</a> → New Application → Bot tab → Reset Token → copy your token.
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">2</div>
+          <div class="step-body">
+            <div class="step-title">Enable Privileged Intents</div>
+            <div class="step-desc">In the Bot settings, enable <strong>Message Content Intent</strong> — required to read message text.</div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">3</div>
+          <div class="step-body">
+            <div class="step-title">Invite Bot to Your Server</div>
+            <div class="step-desc">
+              OAuth2 → URL Generator → Scopes: <code>bot</code>, <code>applications.commands</code> → Permissions: Send Messages, Read Message History, Attach Files → copy and open the invite URL.
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">4</div>
+          <div class="step-body">
+            <div class="step-title">Get Anthropic API Key</div>
+            <div class="step-desc">
+              Sign up at <a href="https://console.anthropic.com" target="_blank">console.anthropic.com</a>, go to API Keys, and create a new key.
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">5</div>
+          <div class="step-body">
+            <div class="step-title">Deploy to Railway</div>
+            <div class="step-desc">
+              Push the project to GitHub. In <a href="https://railway.app" target="_blank">Railway</a> → New Project → Deploy from GitHub repo → select your repo.
+              Then go to <strong>Variables</strong> and add <code>DISCORD_TOKEN</code> and <code>ANTHROPIC_API_KEY</code>.
+              Railway auto-deploys and the bot starts immediately.
+            </div>
+          </div>
+        </div>
+        <div class="step">
+          <div class="step-num">6</div>
+          <div class="step-body">
+            <div class="step-title">Test It</div>
+            <div class="step-desc">In your Discord server, type <code>!claude hello</code> or mention the bot. Attach an Excel file with a prompt for VBA scripts.</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="card" style="border-color:rgba(88,101,242,0.3)">
+      <div class="card-title">🚂 Railway Deployment</div>
+      <div style="display:flex; flex-direction:column; gap:12px; font-size:13px;">
+        <div style="background:var(--code-bg); border-radius:8px; padding:14px; font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:2; border:1px solid var(--border)">
+          <span style="color:var(--muted)"># 1. Push to GitHub</span><br>
+          <span style="color:var(--green)">git init && git add . && git commit -m "init"</span><br>
+          <span style="color:var(--green)">git remote add origin https://github.com/YOU/YOUR-REPO.git</span><br>
+          <span style="color:var(--green)">git push -u origin main</span><br><br>
+          <span style="color:var(--muted)"># 2. Install Railway CLI (optional)</span><br>
+          <span style="color:var(--green)">npm install -g @railway/cli</span><br>
+          <span style="color:var(--green)">railway login && railway init && railway up</span>
+        </div>
+        <div style="background:rgba(87,242,135,0.05); border:1px solid rgba(87,242,135,0.2); border-radius:8px; padding:12px; color:var(--green); font-size:12px">
+          ✅ <strong>Railway auto-detects Node.js</strong> via nixpacks. The <code>railway.json</code> sets the start command and health check. No Dockerfile needed.
+        </div>
+        <div style="font-size:13px; color:var(--muted)">
+          Railway will provide a public URL for your dashboard (e.g. <code style="color:var(--text)">https://your-app.railway.app</code>).
+          The bot connects to Discord via WebSocket — Railway keeps it alive 24/7.
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">Running Locally</div>
+      <div style="background:var(--code-bg); border-radius:8px; padding:16px; font-family:'IBM Plex Mono',monospace; font-size:12px; line-height:2; border:1px solid var(--border)">
+        <span style="color:var(--muted)"># Copy env example and fill in your keys</span><br>
+        <span style="color:var(--green)">cp .env.example .env</span><br><br>
+        <span style="color:var(--muted)"># Install and start</span><br>
+        <span style="color:var(--green)">npm install && node dashboard.js</span>
+      </div>
+    </div>
+  </div>
+
+</main>
+
+<script>
+let chatHistory = [];
+let allowedChannels = [];
+let currentFile = null;
+
+// Navigation
+function showPage(id) {
+  document.querySelectorAll('.page').forEach(p => p.classList.remove('active'));
+  document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+  document.getElementById('page-' + id).classList.add('active');
+  event.currentTarget.classList.add('active');
+}
+
+// Bot status
+async function checkStatus() {
+  try {
+    const res = await fetch('/api/bot-status');
+    const data = await res.json();
+    const dot = document.getElementById('statusDot');
+    const text = document.getElementById('statusText');
+    const startBtn = document.getElementById('startBtn');
+    const stopBtn = document.getElementById('stopBtn');
+    const overviewStatus = document.getElementById('overviewStatus');
+
+    if (data.running) {
+      dot.className = 'status-dot online';
+      text.textContent = 'Online';
+      startBtn.style.display = 'none';
+      stopBtn.style.display = 'inline-flex';
+      if (overviewStatus) overviewStatus.textContent = 'ONLINE';
+    } else {
+      dot.className = 'status-dot offline';
+      text.textContent = 'Offline';
+      startBtn.style.display = 'inline-flex';
+      stopBtn.style.display = 'none';
+      if (overviewStatus) overviewStatus.textContent = 'OFFLINE';
+    }
+  } catch (e) {}
+}
+
+async function toggleBot(start) {
+  await fetch('/api/bot-' + (start ? 'start' : 'stop'), { method: 'POST' });
+  setTimeout(checkStatus, 800);
+}
+
+// Config / env status
+async function loadConfig() {
+  try {
+    const res = await fetch('/api/env-status');
+    const env = await res.json();
+
+    // Overview stats
+    const prefixEl = document.getElementById('overviewPrefix');
+    const channelsEl = document.getElementById('overviewChannels');
+    if (prefixEl) prefixEl.textContent = env.PREFIX || '!claude';
+    if (channelsEl) channelsEl.textContent = env.ALLOWED_CHANNELS ? env.ALLOWED_CHANNELS.split(',').filter(Boolean).length : 'ALL';
+
+    // Users page — token limits
+    const fmt = n => parseInt(n).toLocaleString();
+    const el = id => document.getElementById(id);
+    if (el('limFull1'))   el('limFull1').textContent   = fmt(env.MAX_TOKENS_FULL       || 4000);
+    if (el('limFull2'))   el('limFull2').textContent   = fmt(env.DAILY_TOKENS_FULL     || 100000);
+    if (el('limRestr1'))  el('limRestr1').textContent  = fmt(env.MAX_TOKENS_RESTRICTED || 200);
+    if (el('limRestr2'))  el('limRestr2').textContent  = fmt(env.DAILY_TOKENS_RESTRICTED || 500);
+
+    // Env status cards on Config page
+    const container = document.getElementById('envStatus');
+    if (!container) return;
+
+    const vars = [
+      { key: 'DISCORD_TOKEN',     set: env.DISCORD_TOKEN,     required: true,  desc: 'Discord bot token' },
+      { key: 'ANTHROPIC_API_KEY', set: env.ANTHROPIC_API_KEY, required: true,  desc: 'Anthropic API key' },
+      { key: 'ALLOWED_USERS',     set: true, value: env.ALLOWED_USERS     || '(none — everyone restricted)', required: false, desc: 'Allowlisted Discord user IDs' },
+      { key: 'PREFIX',            set: true, value: env.PREFIX,            required: false, desc: 'Command prefix' },
+      { key: 'BOT_NAME',          set: true, value: env.BOT_NAME,          required: false, desc: 'Bot display name' },
+      { key: 'ALLOWED_CHANNELS',  set: true, value: env.ALLOWED_CHANNELS || '(all channels)', required: false, desc: 'Restricted channel IDs' },
+    ];
+
+    container.innerHTML = vars.map(v => `
+      <div style="display:flex; align-items:center; justify-content:space-between; background:var(--surface2); border-radius:8px; padding:10px 14px; border:1px solid var(--border)">
+        <div style="display:flex; align-items:center; gap:10px">
+          <span style="font-size:14px">${v.set ? '✅' : '❌'}</span>
+          <div>
+            <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:${v.required && !v.set ? 'var(--red)' : 'var(--accent2)'}; font-weight:600">${v.key}</div>
+            <div style="font-size:11px; color:var(--muted)">${v.desc}</div>
+          </div>
+        </div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:var(--muted); max-width:200px; text-align:right; overflow:hidden; text-overflow:ellipsis; white-space:nowrap">
+          ${v.value !== undefined ? v.value : (v.set ? '••••••••' : '<span style="color:var(--red)">NOT SET</span>')}
+        </div>
+      </div>
+    `).join('');
+  } catch (e) {
+    console.warn('Could not load env status', e);
+  }
+}
+
+// Chat test
+async function sendChat() {
+  const input = document.getElementById('chatInput');
+  const msg = input.value.trim();
+  if (!msg) return;
+  input.value = '';
+
+  appendChatMsg('user', msg);
+  const btn = document.getElementById('chatSendBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>';
+
+  try {
+    const res = await fetch('/api/test-chat', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ message: msg, history: chatHistory }),
+    });
+    const data = await res.json();
+    if (data.error) {
+      appendChatMsg('bot', '❌ Error: ' + data.error);
+    } else {
+      chatHistory = data.messages;
+      appendChatMsg('bot', data.reply);
+    }
+  } catch (e) {
+    appendChatMsg('bot', '❌ Network error');
+  }
+
+  btn.disabled = false;
+  btn.innerHTML = 'Send';
+}
+
+function appendChatMsg(role, text) {
+  const win = document.getElementById('chatWindow');
+  // Remove placeholder
+  const placeholder = win.querySelector('[style*="margin: auto 0"]');
+  if (placeholder) placeholder.remove();
+
+  const div = document.createElement('div');
+  div.className = 'chat-msg ' + role;
+  div.innerHTML = `
+    <div class="chat-avatar">${role === 'user' ? '👤' : '🤖'}</div>
+    <div class="chat-bubble">${escapeHtml(text)}</div>
+  `;
+  win.appendChild(div);
+  win.scrollTop = win.scrollHeight;
+}
+
+function clearChat() {
+  chatHistory = [];
+  const win = document.getElementById('chatWindow');
+  win.innerHTML = '<div style="text-align:center; color:var(--muted); font-size:13px; margin: auto 0">Start a conversation to test your bot\'s responses</div>';
+}
+
+function escapeHtml(str) {
+  return str.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'<br>');
+}
+
+// VBA
+function handleFileChange(input) {
+  currentFile = input.files[0];
+  document.getElementById('fileName').textContent = currentFile ? '📎 ' + currentFile.name : '';
+}
+
+async function generateVBA() {
+  const prompt = document.getElementById('vbaPrompt').value.trim();
+  if (!prompt && !currentFile) {
+    alert('Please enter a prompt or upload a file.');
+    return;
+  }
+
+  const btn = document.getElementById('vbaBtn');
+  btn.innerHTML = '<span class="spinner"></span> Generating...';
+  btn.disabled = true;
+
+  const formData = new FormData();
+  if (currentFile) formData.append('file', currentFile);
+  formData.append('prompt', prompt);
+
+  try {
+    const res = await fetch('/api/test-vba', { method: 'POST', body: formData });
+    const data = await res.json();
+    const card = document.getElementById('vbaResultCard');
+    const result = document.getElementById('vbaResult');
+    card.style.display = 'block';
+
+    if (data.error) {
+      result.textContent = '❌ Error: ' + data.error;
+    } else {
+      result.textContent = data.result;
+      card.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  } catch (e) {
+    alert('Network error');
+  }
+
+  btn.innerHTML = '<span>⚡</span> Generate VBA Script';
+  btn.disabled = false;
+}
+
+function copyVBA() {
+  const text = document.getElementById('vbaResult').textContent;
+  navigator.clipboard.writeText(text).then(() => {
+    const btn = event.currentTarget;
+    btn.textContent = '✅ Copied!';
+    setTimeout(() => btn.textContent = '📋 Copy', 2000);
+  });
+}
+
+// Init
+loadConfig();
+checkStatus();
+setInterval(checkStatus, 5000);
+</script>
+</body>
+</html>
