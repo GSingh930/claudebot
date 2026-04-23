@@ -1,0 +1,8 @@
+{
+  "discordToken": "",
+  "anthropicApiKey": "",
+  "prefix": "!claude",
+  "allowedChannels": [],
+  "systemPrompt": "You are a helpful, friendly assistant in a Discord server. Be concise, clear, and engaging. Use Discord markdown when helpful (bold, code blocks, etc.).",
+  "botName": "ClaudeBot"
+}
